@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("SUBMITTER")
+  department    String?
+  title         String?
+  phone         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts              Account[]
+  sessions              Session[]
+  submittedReservations Reservation[] @relation("SubmittedBy")
+  advisedReservations   Reservation[] @relation("AdvisedBy")
+  approvalActions       ApprovalAction[]
+}
+
+model Room {
+  id        String   @id @default(cuid())
+  name      String
+  type      String
+  building  String?
+  capacity  Int?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  reservations Reservation[]
+}
+
+model Reservation {
+  id String @id @default(cuid())
+
+  // Application Info
+  requestorName    String
+  title            String?
+  department       String
+  address          String?
+  city             String?
+  state            String?
+  zip              String?
+  telephone        String?
+  fax              String?
+  email            String
+  fundingAccountNo String
+
+  // Event Info
+  eventName         String
+  eventDate         DateTime
+  alternativeDate   DateTime?
+  startTime         String
+  endTime           String
+  attendance        Int
+  purpose           String
+  speakerPerformer  String?
+  whoMayAttend      String?
+  admissionType     String?
+  ticketPrice       Float?
+  payOnSitePrice    Float?
+  foodBeverages     Boolean  @default(false)
+  musicProvided     Boolean  @default(false)
+  musicType         String?
+  concessionsNeeded Boolean  @default(false)
+  catered           Boolean  @default(false)
+  webCalendar       Boolean  @default(false)
+
+  // Space Info
+  requestedSpace      String
+  roomId              String?
+  setupDescription    String?
+  doorOpenTimeSponsor String?
+  doorOpenTimePublic  String?
+
+  // Additional Services
+  soundMicrophone   Boolean @default(false)
+  audiovisual       Boolean @default(false)
+  podium            Boolean @default(false)
+  stage             Boolean @default(false)
+  stageSize         String?
+  parking           Boolean @default(false)
+  telecomDevices    Boolean @default(false)
+  tablesNeeded      Boolean @default(false)
+  tableType         String?
+  registrationTable Boolean @default(false)
+  chairs            Boolean @default(false)
+  chairCount        Int?
+  lighting          Boolean @default(false)
+  pipeDrape         Boolean @default(false)
+  otherServices     String?
+
+  // Workflow
+  status        String  @default("DRAFT")
+  submitterType String
+  denialReason  String?
+
+  // Relations
+  submittedById String
+  submittedBy   User    @relation("SubmittedBy", fields: [submittedById], references: [id])
+  advisorId     String?
+  advisor       User?   @relation("AdvisedBy", fields: [advisorId], references: [id])
+  room          Room?   @relation(fields: [roomId], references: [id])
+
+  approvalActions ApprovalAction[]
+
+  submittedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([eventDate])
+  @@index([status])
+  @@index([submittedById])
+}
+
+model ApprovalAction {
+  id            String      @id @default(cuid())
+  reservationId String
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  approverId    String
+  approver      User        @relation(fields: [approverId], references: [id])
+  action        String
+  notes         String?
+  createdAt     DateTime    @default(now())
+}
