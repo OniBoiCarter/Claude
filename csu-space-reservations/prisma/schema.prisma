@@ -58,6 +58,7 @@ model User {
   submittedReservations Reservation[] @relation("SubmittedBy")
   advisedReservations   Reservation[] @relation("AdvisedBy")
   approvalActions       ApprovalAction[]
+  demoAccount           DemoAccount?
 }
 
 model Room {
@@ -163,4 +164,12 @@ model ApprovalAction {
   action        String
   notes         String?
   createdAt     DateTime    @default(now())
+}
+
+model DemoAccount {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  passwordHash String
+  createdAt    DateTime @default(now())
 }
